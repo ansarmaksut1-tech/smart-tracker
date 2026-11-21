@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10151e">
+<title>Smart Tracker</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10151e;color:#f2f5fa;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;padding:20px 15px 45px}
+.container{max-width:650px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin:12px 0 25px}
+h1{font-size:27px;margin:0}
+.sub{color:#8995a8;font-size:13px;margin-top:6px}
+.date{color:#9caac0;font-size:13px}
+.card{background:#1a2230;border:1px solid #293447;border-radius:17px;padding:17px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 14px}
+h3{font-size:15px;margin:0 0 7px}
+.muted{color:#8e9bb0;font-size:13px;line-height:1.5}
+.progress{height:9px;background:#303b4d;border-radius:20px;overflow:hidden;margin:12px 0}
+.bar{height:100%;width:0;background:#56d69b;transition:.2s}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat{background:#222d3d;border-radius:12px;padding:12px 8px;text-align:center}
+.stat strong{display:block;font-size:23px;margin-bottom:4px}
+.stat span{font-size:11px;color:#9ba8ba}
+.task{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid #2c3748}
+.task:last-child{border:0}
+.task input{width:20px;height:20px;accent-color:#56d69b;flex-shrink:0;margin-top:1px}
+.task label{font-size:14px;line-height:1.45;flex:1}
+.task small{display:block;color:#8997aa;margin-top:4px;font-size:12px}
+.done label{text-decoration:line-through;color:#8793a5}
+button{border:0;border-radius:11px;padding:12px 15px;background:#56d69b;color:#102019;font-size:14px;font-weight:700;cursor:pointer}
+button:active{opacity:.75}
+.secondary{background:#2a3648;color:#edf2fa}
+.tabs{display:flex;gap:7px;overflow-x:auto;margin-bottom:15px}
+.tabs button{white-space:nowrap;background:#202a39;color:#aebbd0}
+.tabs button.active{background:#56d69b;color:#102019}
+.page{display:none}
+.page.active{display:block}
+textarea{width:100%;background:#111a27;color:white;border:1px solid #364357;border-radius:10px;padding:12px;font:14px inherit;min-height:85px;resize:vertical}
+select{background:#263347;color:white;padding:10px;border-radius:9px;border:1px solid #364357}
+.history-item{padding:12px 0;border-bottom:1px solid #303b4d;font-size:13px}
+footer{text-align:center;color:#66758a;font-size:11px;margin-top:25px}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+ <div>
+  <h1>SMART TRACKER</h1>
+  <div class="sub">Hockey development system</div>
+ </div>
+ <div class="date" id="today"></div>
+</header>
+
+<div class="tabs">
+ <button class="active" data-page="home">Сегодня</button>
+ <button data-page="plan">План</button>
+ <button data-page="stats">Прогресс</button>
+ <button data-page="recovery">Восстановление</button>
+</div>
+
+<section class="page active" id="home">
+ <div class="card">
+  <h2>Твой сегодняшний прогресс</h2>
+  <div style="display:flex;justify-content:space-between">
+   <span class="muted">Выполнено задач</span>
+   <strong id="count">0 / 0</strong>
+  </div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="muted" id="percent">Начни свой день!</div>
+ </div>
+
+ <div class="card">
+  <h2>Твоя статистика</h2>
+  <div class="stats">
+   <div class="stat"><strong id="days">0</strong><span>Активных дней</span></div>
+   <div class="stat"><strong id="total">0</strong><span>Задач выполнено</span></div>
+   <div class="stat"><strong id="streak">0</strong><span>Дней подряд</span></div>
+  </div>
+ </div>
+
+ <div class="card">
+  <h2>Задачи на сегодня</h2>
+  <div id="tasks"></div>
+ </div>
+
+ <div class="card">
+  <h2>Самочувствие</h2>
+  <p class="muted">Оцени свою энергию после тренировок</p>
+  <select id="energy">
+   <option value="">Выбери оценку</option>
+   <option value="1">1 — очень устал</option>
+   <option value="2">2 — устал</option>
+   <option value="3">3 — нормально</option>
+   <option value="4">4 — хорошо</option>
+   <option value="5">5 — отлично</option>
+  </select>
+  <p class="muted">Заметки за день</p>
+  <textarea id="notes" placeholder="Что получилось? Что нужно улучшить?"></textarea>
+  <button style="margin-top:10px" onclick="saveNotes()">Сохранить день</button>
+ </div>
+</section>
+
+<section class="page" id="plan">
+ <div class="card">
+  <h2>Недельная программа</h2>
+  <p class="muted">Дополнительная работа должна дополнять основную тренировку, а не мешать восстановлению. Выбирай лёгкий вариант после тяжёлого льда.</p>
+ </div>
+ <div id="weekly"></div>
+</section>
+
+<section class="page" id="stats">
+ <div class="card">
+  <h2>История прогресса</h2>
+  <div class="stats">
+   <div class="stat"><strong id="statDays">0</strong><span>Дней с отметками</span></div>
+   <div class="stat"><strong id="statTasks">0</strong><span>Выполнено задач</span></div>
+   <div class="stat"><strong id="statRate">0%</strong><span>Выполнение</span></div>
+  </div>
+ </div>
+ <div class="card">
+  <h2>Последние дни</h2>
+  <div id="history"></div>
+ </div>
+ <div class="card">
+  <h2>Твои результаты</h2>
+  <p class="muted">Данные хранятся в памяти браузера на этом устройстве.</p>
+  <button class="secondary" onclick="exportData()">Экспортировать данные</button>
+ </div>
+</section>
+
+<section class="page" id="recovery">
+ <div class="card">
+  <h2>Восстановление после хоккея</h2>
+  <p class="muted">Выполняй спокойно, без боли. Не нужно проходить весь список после каждой тяжёлой тренировки.</p>
+  <div id="recoveryTasks"></div>
+ </div>
+ <div class="card">
+  <h2>Правило спортсмена</h2>
+  <p class="muted">Сон, питание, отдых и качество основной тренировки важнее дополнительных упражнений. При боли или необычной усталости прекращай нагрузку и сообщи тренеру или взрослому.</p>
+ </div>
+</section>
+
+<footer>SMART TRACKER · YOUR DAILY DEVELOPMENT</footer>
+</div>
+
+<script>
+const days=[
+ {name:"Понедельник",focus:"Координация и контроль шайбы",tasks:[
+ ["Техника рук","8 минут спокойной работы с шайбой или мячом"],
+ ["Координация","2 подхода по 30 секунд: движение ног в разных направлениях"],
+ ["Мобильность","5 минут лёгкой подвижности тазобедренных суставов"]
+ ]},
+ {name:"Вторник",focus:"Хоккейное мышление",tasks:[
+ ["Сканирование","5 минут: перед каждым приёмом мяча или шайбы переводить взгляд в стороны"],
+ ["Видеоанализ","10 минут просмотра матча: следить за решениями игрока своего амплуа"],
+ ["Передачи","5 минут точных передач, если доступен инвентарь"]
+ ]},
+ {name:"Среда",focus:"Восстановление и мобильность",tasks:[
+ ["Лёгкая прогулка","10–15 минут по самочувствию"],
+ ["Мобильность","8 минут спокойных движений для таза, голеностопа и грудного отдела"],
+ ["Дыхание","3 минуты спокойного дыхания"]
+ ]},
+ {name:"Четверг",focus:"Бросок и техника",tasks:[
+ ["Техника броска","5–8 минут отработки правильной техники без максимальной силы"],
+ ["Контроль шайбы","5 минут: короткие движения и смена направления"],
+ ["Реакция","3 минуты простых упражнений на реакцию"]
+ ]},
+ {name:"Пятница",focus:"Корпус и баланс",tasks:[
+ ["Планка","2 подхода по 20–30 секунд"],
+ ["Баланс","2 подхода по 20 секунд на каждую ногу"],
+ ["Мобильность","5 минут лёгкой растяжки"]
+ ]},
+ {name:"Суббота",focus:"Анализ и индивидуальные навыки",tasks:[
+ ["Видеоанализ","10 минут: найти 3 удачных решения и 2 ошибки"],
+ ["Работа над ошибками","5 минут мысленно разобрать игровые ситуации"],
+ ["Лёгкая техника","5 минут без интенсивной нагрузки"]
+ ]},
+ {name:"Воскресенье",focus:"Отдых",tasks:[
+ ["Восстановление","Прогулка или полный отдых"],
+ ["Итоги недели","Записать 3 достижения и 1 цель на следующую неделю"],
+ ["Сон","Постараться обеспечить полноценный ночной сон"]
+ ]}
+];
+
+const recovery=[
+ ["Лёгкая ходьба","3–5 минут для спокойного завершения тренировки"],
+ ["Икры и голеностоп","Мягкие движения голеностопом — 1 минута"],
+ ["Тазобедренные суставы","Спокойные движения без боли — 2 минуты"],
+ ["Задняя поверхность бедра","Мягкая растяжка — 30 секунд на сторону"],
+ ["Ягодичные мышцы","Лёгкая растяжка — 30 секунд на сторону"],
+ ["Дыхание","2 минуты спокойного дыхания"]
+];
+
+const todayKey=()=>new Date().toLocaleDateString("en-CA");
+const key=todayKey();
+const storageKey="smartTrackerData";
+let data={};
+try{data=JSON.parse(localStorage.getItem(storageKey)||"{}")}catch(e){data={}}
+function save(){localStorage.setItem(storageKey,JSON.stringify(data))}
+function dayData(){if(!data[key])data[key]={checks:{},energy:"",notes:""};return data[key]}
+const dayIndex=(new Date().getDay()+6)%7;
+const today=days[dayIndex];
+
+document.getElementById("today").textContent=new Date().toLocaleDateString("ru-RU",{day:"numeric",month:"short"});
+document.getElementById("energy").value=dayData().energy;
+document.getElementById("notes").value=dayData().notes;
+
+function renderTasks(){
+ const d=dayData();
+ const tasks=[
+ ["Основная хоккейная тренировка","Главная задача дня. Качество важнее количества."],
+ ["Дополнительная индивидуальная работа","Только если есть силы и это не противоречит плану тренера."],
+ ...today.tasks
+ ];
+ document.getElementById("tasks").innerHTML=tasks.map((t,i)=>`
+ <div class="task ${d.checks[i]?"done":""}">
+ <input type="checkbox" id="t${i}" ${d.checks[i]?"checked":""} onchange="toggle(${i},this.checked)">
+ <label for="t${i}">${t[0]}<small>${t[1]}</small></label>
+ </div>`).join("");
+ update();
+}
+function toggle(i,v){dayData().checks[i]=v;save();renderTasks()}
+function update(){
+ const d=dayData(),checks=d.checks||{};
+ const count=Object.values(checks).filter(Boolean).length;
+ const total=2+today.tasks.length;
+ document.getElementById("count").textContent=count+" / "+total;
+ document.getElementById("bar").style.width=(count/total*100)+"%";
+ document.getElementById("percent").textContent=Math.round(count/total*100)+"% дня выполнено";
+ updateStats();
+}
+function saveNotes(){
+ dayData().energy=document.getElementById("energy").value;
+ dayData().notes=document.getElementById("notes").value;
+ save();alert("День сохранён!");
+}
+function renderWeekly(){
+ document.getElementById("weekly").innerHTML=days.map((d,i)=>`
+ <div class="card">
+ <h3>${d.name} ${i===dayIndex?"· Сегодня":""}</h3>
+ <p class="muted">${d.focus}</p>
+ ${d.tasks.map(t=>`<div class="task"><label>${t[0]}<small>${t[1]}</small></label></div>`).join("")}
+ </div>`).join("");
+}
+function renderRecovery(){
+ document.getElementById("recoveryTasks").innerHTML=recovery.map((t,i)=>`
+ <div class="task"><input type="checkbox" id="r${i}">
+ <label for="r${i}">${t[0]}<small>${t[1]}</small></label></div>`).join("");
+}
+function updateStats(){
+ const entries=Object.entries(data);
+ let total=0,completed=0,active=0;
+ entries.forEach(([date,d])=>{
+ const n=Object.values(d.checks||{}).filter(Boolean).length;
+ total+=Object.keys(d.checks||{}).length;
+ completed+=n;
+ if(n>0)active++;
+ });
+ document.getElementById("days").textContent=active;
+ document.getElementById("total").textContent=completed;
+ document.getElementById("statDays").textContent=active;
+ document.getElementById("statTasks").textContent=completed;
+ document.getElementById("statRate").textContent=total?Math.round(completed/total*100)+"%":"0%";
+ let streak=0;
+ for(let i=0;i<365;i++){
+ const date=new Date();date.setDate(date.getDate()-i);
+ const k=date.toLocaleDateString("en-CA");
+ if(data[k]&&Object.values(data[k].checks||{}).some(Boolean))streak++;
+ else if(i>0)break;
+ }
+ document.getElementById("streak").textContent=streak;
+ document.getElementById("history").innerHTML=entries.sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14).map(([date,d])=>{
+ const n=Object.values(d.checks||{}).filter(Boolean).length;
+ return `<div class="history-item"><strong>${date}</strong><span style="float:right;color:#56d69b">${n} задач</span><div class="muted">${d.energy?"Энергия: "+d.energy+"/5":"Нет оценки энергии"}${d.notes?" · "+d.notes.replace(/</g,"&lt;"):""}</div></div>`;
+ }).join("")||'<p class="muted">Пока нет записей. Начни отмечать задачи!</p>';
+}
+function exportData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="smart-tracker-data.json";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");
+ document.getElementById(b.dataset.page).classList.add("active");
+}));
+renderTasks();
+renderWeekly();
+renderRecovery();
+updateStats();
+</script>
+</body>
+</html>
